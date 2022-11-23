@@ -1,46 +1,100 @@
-import { UserInputDTO, LoginInputDTO } from "../model/User";
+import { UserInputDTO, LoginInputDTO, User } from "../model/User";
 import { UserDatabase } from "../data/UserDatabase";
 import { IdGenerator } from "../services/IdGenerator";
 import { HashManager } from "../services/HashManager";
 import { Authenticator } from "../services/Authenticator";
-import * as E from "../error/BaseError";
+import {
+  CustomError,
+  InvalidCredentials,
+  InvalidEmail,
+  InvalidPassword,
+  InvalidRequest,
+} from "../error/CustomError";
 
 export class UserBusiness {
+  constructor(
+    private idGenerator: IdGenerator,
+    private authenticator: Authenticator,
+    private hashManager: HashManager,
     private userDatabase: UserDatabase
-    constructor(){
-        this.userDatabase = new UserDatabase();
+  ) {}
+
+  public createUser = async (user: UserInputDTO) => {
+    try {
+      if (!user.name || user.email || !user.password) {
+        throw new InvalidRequest();
+      }
+
+      if (user.password.length < 8) {
+        throw new InvalidPassword();
+      }
+
+      if (user.email.indexOf("@") === -1) {
+        throw new InvalidEmail();
+      }
+
+      const id = this.idGenerator.generate();
+      const hashPassword = await this.hashManager.hash(user.password);
+
+      const newUser = new User(
+        id,
+        user.name,
+        user.email,
+        hashPassword,
+        User.stringToUserRole(user.role)
+      );
+
+      await this.userDatabase.createUser(newUser);
+
+      const accessToken = this.authenticator.generateToken({
+        id,
+        role: user.role,
+      });
+
+      return accessToken;
+    } catch (error: any) {
+      if (error.message.includes("key", "email")) {
+        throw new InvalidEmail();
+      }
+      throw new CustomError(
+        error.message || error.sqlMessage,
+        error.statusCode
+      );
     }
+  };
 
-    public createUser = async (user: UserInputDTO) => {
+  public login = async (user: LoginInputDTO) => {
+    try {
+      if (!user.email || !user.password) {
+        throw new InvalidRequest();
+      }
 
-        const idGenerator = new IdGenerator();
-        const id = idGenerator.generate();
+      const userFromDB = await this.userDatabase.login(user.email);
 
-        const hashManager = new HashManager();
-        const hashPassword = await hashManager.hash(user.password);
+      if (!user) {
+        throw new InvalidCredentials();
+      }
 
-        await this.userDatabase.createUser(id, user.email, user.name, hashPassword, user.role);
+      const hashCompare = await this.hashManager.compare(
+        user.password,
+        userFromDB.getPassword()
+      );
 
-        const authenticator = new Authenticator();
-        const accessToken = authenticator.generateToken({ id, role: user.role });
+      if (!hashCompare) {
+        throw new InvalidCredentials();
+      }
 
-        return accessToken;
+      const accessToken = this.authenticator.generateToken({
+        id: userFromDB.getId(),
+        role: userFromDB.getRole(),
+      });
+
+      return accessToken;
+    } catch (error: any) {
+      throw new CustomError(
+        error.message || error.sqlMessage,
+        error.statusCode
+      );
     }
-
-    public getUserByEmail = async (user: LoginInputDTO) => {
-
-        const userFromDB = await this.userDatabase.getUserByEmail(user.email);
-
-        const hashManager = new HashManager();
-        const hashCompare = await hashManager.compare(user.password, userFromDB.getPassword());
-
-        const authenticator = new Authenticator();
-        const accessToken = authenticator.generateToken({ id: userFromDB.getId(), role: userFromDB.getRole() });
-
-        if (!hashCompare) {
-            throw new Error("Invalid Password!");
-        }
-
-        return accessToken;
-    }
+  };
 }
