@@ -5,7 +5,7 @@ export class CustomError extends Error {
 }
 
 export class InvalidRequest extends CustomError {
-  constructor(){
+  constructor() {
     super(422, "Complete all the fields correctly!");
   }
 }
@@ -42,7 +42,7 @@ export class UserNotFound extends CustomError {
 
 export class Unauthorized extends CustomError {
   constructor() {
-    super(401, "Unauthorized user"); 
+    super(401, "Unauthorized user");
   }
 }
 
@@ -52,8 +52,32 @@ export class InvalidUser extends CustomError {
   }
 }
 
+export class InvalidBand extends CustomError {
+  constructor() {
+    super(400, "Band already exists");
+  }
+}
+
+export class InvalidShow extends CustomError {
+  constructor() {
+    super(400, "Invalid show");
+  }
+}
+
 export class InvalidCredentials extends CustomError {
   constructor() {
     super(400, "Invalid credentials");
+  }
+}
+
+export class InvalidSchedule extends CustomError {
+  constructor() {
+    super(400, "invalid schedule");
+  }
+}
+
+export class InvalidDay extends CustomError {
+  constructor() {
+    super(400, "invalid day");
   }
 }

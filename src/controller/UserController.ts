@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import {Request, Response} from 'express'
 import { UserInputDTO, LoginInputDTO } from "../model/User";
 import { UserBusiness } from "../business/UserBusiness";
 import { BaseDatabase } from "../data/BaseDatabase";
@@ -17,11 +17,14 @@ const userBusiness = new UserBusiness(
 export class UserController {
   public signup = async (req: Request, res: Response) => {
     try {
+
+      const {name, email, password, role} = req.body;
+
       const input: UserInputDTO = {
-        name: req.body.name,
-        email: req.body.email,
-        password: req.body.password,
-        role: req.body.role,
+        name,
+        email,
+        password,
+        role
       };
 
       const token = await userBusiness.createUser(input);

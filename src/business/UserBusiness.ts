@@ -3,13 +3,8 @@ import { UserDatabase } from "../data/UserDatabase";
 import { IdGenerator } from "../services/IdGenerator";
 import { HashManager } from "../services/HashManager";
 import { Authenticator } from "../services/Authenticator";
-import {
-  CustomError,
-  InvalidCredentials,
-  InvalidEmail,
-  InvalidPassword,
-  InvalidRequest,
-} from "../error/CustomError";
+import * as E from '../error/CustomError'
+
 
 export class UserBusiness {
   constructor(
@@ -22,15 +17,15 @@ export class UserBusiness {
   public createUser = async (user: UserInputDTO) => {
     try {
       if (!user.name || user.email || !user.password) {
-        throw new InvalidRequest();
+        throw new E.InvalidRequest();
       }
 
       if (user.password.length < 8) {
-        throw new InvalidPassword();
+        throw new E.InvalidPassword();
       }
 
       if (user.email.indexOf("@") === -1) {
-        throw new InvalidEmail();
+        throw new E.InvalidEmail();
       }
 
       const id = this.idGenerator.generate();
@@ -54,9 +49,9 @@ export class UserBusiness {
       return accessToken;
     } catch (error: any) {
       if (error.message.includes("key", "email")) {
-        throw new InvalidEmail();
+        throw new E.InvalidEmail();
       }
-      throw new CustomError(
+      throw new E.CustomError(
         error.message || error.sqlMessage,
         error.statusCode
       );
@@ -66,13 +61,13 @@ export class UserBusiness {
   public login = async (user: LoginInputDTO) => {
     try {
       if (!user.email || !user.password) {
-        throw new InvalidRequest();
+        throw new E.InvalidRequest();
       }
 
       const userFromDB = await this.userDatabase.login(user.email);
 
       if (!user) {
-        throw new InvalidCredentials();
+        throw new E.InvalidCredentials();
       }
 
       const hashCompare = await this.hashManager.compare(
@@ -81,7 +76,7 @@ export class UserBusiness {
       );
 
       if (!hashCompare) {
-        throw new InvalidCredentials();
+        throw new E.InvalidCredentials();
       }
 
       const accessToken = this.authenticator.generateToken({
@@ -91,7 +86,7 @@ export class UserBusiness {
 
       return accessToken;
     } catch (error: any) {
-      throw new CustomError(
+      throw new E.CustomError(
         error.message || error.sqlMessage,
         error.statusCode
       );
