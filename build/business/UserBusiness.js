@@ -89,7 +89,7 @@ class UserBusiness {
                 return accessToken;
             }
             catch (error) {
-                throw new E.CustomError(error.message || error.sqlMessage, error.statusCode);
+                throw new E.CustomError(400, "aki está o erro");
             }
         });
     }

@@ -26,7 +26,7 @@ export class BandDatabase extends BaseDatabase {
       const bands: Band[] = [];
 
       for (let data of result) {
-        bands.push(await BandDatabase.dataModel(data));
+        bands.push( BandDatabase.dataModel(data));
       }
 
       return bands;
